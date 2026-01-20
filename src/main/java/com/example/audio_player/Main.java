@@ -25,6 +25,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Time;
 
 
 public class Main extends Application {
@@ -111,7 +112,16 @@ public class Main extends Application {
         mainLayout.setAlignment(Pos.CENTER);
         mainLayout.setPadding(new Insets(30));
         mainLayout.setStyle("-fx-background-color: #ecf0f1");
-        
+
+        Scene scene = new Scene (mainLayout, 500, 450);
+        primaryStage.setTitle("Audio Player");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        primaryStage.setOnCloseRequest(e -> cleanup());
+
+        timeline = new Timeline(new KeyFrame(Duration.millis(100), e -> updateProgress()));
+        timeline.setCycleCount(Timeline.INDEFINITE);
     }
 
 
