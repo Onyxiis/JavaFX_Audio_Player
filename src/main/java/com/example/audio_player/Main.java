@@ -79,11 +79,11 @@ public class Main extends Application {
         stopButton.setDisable(true);
         resetButton.setDisable(true);
 
-//        playButton.setOnAction(e -> );
-//        pauseButton.setOnAction(e -> );
-//        stopButton.setOnAction(e -> );
-//        resetButton.setOnAction(e -> );
-//        loadButton.setOnAction(e -> );
+        playButton.setOnAction(e -> playSong());
+        pauseButton.setOnAction(e -> pauseSong());
+        stopButton.setOnAction(e -> stopSong());
+        resetButton.setOnAction(e -> resetSong());
+        loadButton.setOnAction(e -> loadSong(primaryStage));
 
         HBox controlButtons = new HBox(10, playButton, pauseButton, stopButton, resetButton);
         controlButtons.setAlignment(Pos.CENTER);
