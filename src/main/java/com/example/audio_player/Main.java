@@ -97,6 +97,11 @@ public class Main extends Application {
         volumeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             setVolume(newVal.intValue());
         });
+
+        VBox volumeSection = new VBox(5, volumeLabel, volumeSlider);
+        volumeSection.setAlignment(Pos.CENTER);
+
+        
     }
 
 
