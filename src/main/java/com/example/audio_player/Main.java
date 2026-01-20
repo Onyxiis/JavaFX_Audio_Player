@@ -130,6 +130,13 @@ public class Main extends Application {
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("Audio Files" , "*.wav", "*.au", "*.aiff")
         );
+        File musicFolder = new File("src/main/resources/music");
+        if (!musicFolder.exists()){
+            musicFolder = new File("music");
+        }
+        if (musicFolder.exists() && musicFolder.isDirectory()){
+            fileChooser.setInitialDirectory(musicFolder);
+        }
         File file = fileChooser.showOpenDialog(stage);
 
         if(file != null){
