@@ -124,7 +124,26 @@ public class Main extends Application {
         timeline.setCycleCount(Timeline.INDEFINITE);
     }
 
+    private void loadSong(Stage stage){
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Audio File");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Audio Files" , "*.wav", "*.au", "*.aiff")
+        );
+        File file = fileChooser.showOpenDialog(stage);
 
+        if(file != null){
+            try{
+                cleanup();
+
+                audioStream = AudioSystem.getAudioInputStream(file);
+                clip = AudioSystem.getClip();
+                clip.open(audioStream);
+
+                
+            }
+        }
+    }
 
 
 
