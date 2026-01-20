@@ -170,4 +170,19 @@ public class Main extends Application {
         alert.showAndWait();
     }
 
+    private void cleanup(){
+        if (timeline != null) {
+            timeline.stop();
+        }
+        if (clip != null) {
+            clip.close();
+        }
+        if (audioStream != null){
+            try{
+                audioStream.close();
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+        }
+    }
 }
