@@ -101,6 +101,16 @@ public class Main extends Application {
         VBox volumeSection = new VBox(5, volumeLabel, volumeSlider);
         volumeSection.setAlignment(Pos.CENTER);
 
+        VBox mainLayout = new VBox(20,
+                topSection,
+                progressBar,
+                controlButtons,
+                volumeSection,
+                loadButton
+        );
+        mainLayout.setAlignment(Pos.CENTER);
+        mainLayout.setPadding(new Insets(30));
+        mainLayout.setStyle("-fx-background-color: #ecf0f1");
         
     }
 
