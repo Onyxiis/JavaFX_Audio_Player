@@ -145,6 +145,13 @@ public class Main extends Application {
                 songLabel.setText(file.getName());
                 timeLabel.setText("0:00 / " + formatTime(clip.getMicrosecondLength()));
 
+
+                playButton.setDisable(false);
+                pauseButton.setDisable(false);
+                stopButton.setDisable(false);
+                resetButton.setDisable(false);
+
+                setVolume((int) volumeSlider.getValue());
                 
             }
         }
