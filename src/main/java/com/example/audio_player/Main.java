@@ -152,7 +152,16 @@ public class Main extends Application {
                 resetButton.setDisable(false);
 
                 setVolume((int) volumeSlider.getValue());
-                
+
+
+                showAlert("Success", "Song loaded successfully!", Alert.AlertType.INFORMATION);
+
+            } catch (UnsupportedAudioFileException e){
+                showAlert("Error", "Unsupported audio file format", Alert.AlertType.ERROR);
+            } catch (IOException e){
+                showAlert("Error", "Could not read file", Alert.AlertType.ERROR);
+            } catch (LineUnavailableException e){
+                showAlert("Error", "Audio line unavaible", Alert.AlertType.ERROR);
             }
         }
     }
