@@ -140,6 +140,11 @@ public class Main extends Application {
                 clip = AudioSystem.getClip();
                 clip.open(audioStream);
 
+                volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+
+                songLabel.setText(file.getName());
+                timeLabel.setText("0:00 / " + formatTime(clip.getMicrosecondLength()));
+
                 
             }
         }
