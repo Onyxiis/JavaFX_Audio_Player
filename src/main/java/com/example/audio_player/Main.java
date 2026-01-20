@@ -26,6 +26,9 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Time;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class Main extends Application {
@@ -34,12 +37,12 @@ public class Main extends Application {
     private AudioInputStream audioStream;
     private FloatControl volumeControl;
 
+    private List<File> playlist = new ArrayList<>();
+    private int currentSongIndex = 0;
     private Label songLabel;
     private Label timeLabel;
-    private Button playButton;
-    private Button pauseButton;
-    private Button stopButton;
-    private Button resetButton;
+    private Button playButton, pauseButton, stopButton, resetButton;
+    private Button prevButton, nextButton;
     private Slider volumeSlider;
     private ProgressBar progressBar;
     private Timeline timeline;
@@ -62,10 +65,12 @@ public class Main extends Application {
         progressBar = new ProgressBar(0);
         progressBar.setPrefWidth(400);
 
+        prevButton = new Button("⏮ Prev");
         playButton = new Button("▶ Play");
         pauseButton = new Button("⏸ Pause");
         stopButton = new Button("⏹ Stop");
         resetButton = new Button("🔄 Reset");
+        nextButton = new Button("⏭ Next");
         Button loadButton = new Button("📁 Load Song");
 
         playButton.setStyle("-fx-font-size: 14px; -fx-padding: 10 20");
@@ -78,14 +83,18 @@ public class Main extends Application {
         pauseButton.setDisable(true);
         stopButton.setDisable(true);
         resetButton.setDisable(true);
+        prevButton.setDisable(true);
+        nextButton.setDisable(true);
 
         playButton.setOnAction(e -> playSong());
         pauseButton.setOnAction(e -> pauseSong());
         stopButton.setOnAction(e -> stopSong());
         resetButton.setOnAction(e -> resetSong());
         loadButton.setOnAction(e -> loadSong(primaryStage));
+        prevButton.setOnAction(e -> previousSong());
+        nextButton.setOnAction(e -> nextSong());
 
-        HBox controlButtons = new HBox(10, playButton, pauseButton, stopButton, resetButton);
+        HBox controlButtons = new HBox(10, playButton, pauseButton, stopButton, resetButton,prevButton,nextButton);
         controlButtons.setAlignment(Pos.CENTER);
 
         Label volumeLabel = new Label("🔊 Volume");
@@ -113,7 +122,7 @@ public class Main extends Application {
         mainLayout.setPadding(new Insets(30));
         mainLayout.setStyle("-fx-background-color: #ecf0f1");
 
-        Scene scene = new Scene (mainLayout, 500, 450);
+        Scene scene = new Scene (mainLayout, 600, 450);
         primaryStage.setTitle("Audio Player");
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -124,56 +133,93 @@ public class Main extends Application {
         timeline.setCycleCount(Timeline.INDEFINITE);
     }
 
-    private void loadSong(Stage stage){
+    private void loadSong(Stage stage) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select Audio File");
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Audio Files" , "*.wav", "*.au", "*.aiff")
+                new FileChooser.ExtensionFilter("Audio Files", "*.wav", "*.au", "*.aiff")
         );
         File musicFolder = new File("src/main/resources/music");
-        if (!musicFolder.exists()){
+        if (!musicFolder.exists()) {
             musicFolder = new File("music");
         }
-        if (musicFolder.exists() && musicFolder.isDirectory()){
+        if (musicFolder.exists() && musicFolder.isDirectory()) {
             fileChooser.setInitialDirectory(musicFolder);
         }
-        File file = fileChooser.showOpenDialog(stage);
 
-        if(file != null){
-            try{
-                cleanup();
+        File selectedFile = fileChooser.showOpenDialog(stage);
 
-                audioStream = AudioSystem.getAudioInputStream(file);
-                clip = AudioSystem.getClip();
-                clip.open(audioStream);
+        if (selectedFile != null) {
+            playlist.clear();
 
-                volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-
-                songLabel.setText(file.getName());
-                timeLabel.setText("0:00 / " + formatTime(clip.getMicrosecondLength()));
-
-
-                playButton.setDisable(false);
-                pauseButton.setDisable(false);
-                stopButton.setDisable(false);
-                resetButton.setDisable(false);
-
-                setVolume((int) volumeSlider.getValue());
-
-
-                showAlert("Success", "Song loaded successfully!", Alert.AlertType.INFORMATION);
-
-            } catch (UnsupportedAudioFileException e){
-                showAlert("Error", "Unsupported audio file format", Alert.AlertType.ERROR);
-            } catch (IOException e){
-                showAlert("Error", "Could not read file", Alert.AlertType.ERROR);
-            } catch (LineUnavailableException e){
-                showAlert("Error", "Audio line unavaible", Alert.AlertType.ERROR);
+            File directory = selectedFile.getParentFile();
+            File[] files = directory.listFiles((dir, name) ->
+                    name.toLowerCase().endsWith(".wav") ||
+                            name.toLowerCase().endsWith(".au") ||
+                            name.toLowerCase().endsWith(".aiff")
+            );
+            if (files != null) {
+                playlist.addAll(Arrays.asList(files));
             }
+            currentSongIndex = playlist.indexOf(selectedFile);
+            loadCurrentSong();
         }
     }
 
+            private void loadCurrentSong() {
+                if ( playlist.isEmpty() || currentSongIndex < 0 || currentSongIndex >= playlist.size()) return;
 
+                File file = playlist.get(currentSongIndex);
+
+                try {
+                    cleanup();
+
+                    audioStream = AudioSystem.getAudioInputStream(file);
+                    clip = AudioSystem.getClip();
+                    clip.open(audioStream);
+
+                    volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+
+                    songLabel.setText(file.getName());
+                    timeLabel.setText("0:00 / " + formatTime(clip.getMicrosecondLength()));
+
+
+                    playButton.setDisable(false);
+                    pauseButton.setDisable(false);
+                    stopButton.setDisable(false);
+                    resetButton.setDisable(false);
+                    prevButton.setDisable(false);
+                    nextButton.setDisable(false);
+
+                    setVolume((int) volumeSlider.getValue());
+
+                    playSong();
+
+                    showAlert("Success", "Song loaded successfully!", Alert.AlertType.INFORMATION);
+
+                } catch (UnsupportedAudioFileException e) {
+                    showAlert("Error", "Unsupported audio file format", Alert.AlertType.ERROR);
+                } catch (IOException e) {
+                    showAlert("Error", "Could not read file", Alert.AlertType.ERROR);
+                } catch (LineUnavailableException e) {
+                    showAlert("Error", "Audio line unavaible", Alert.AlertType.ERROR);
+                }
+            }
+
+
+
+    private void nextSong(){
+        if(!playlist.isEmpty()){
+            currentSongIndex = (currentSongIndex + 1) % playlist.size();
+            loadCurrentSong();
+        }
+    }
+    private void previousSong(){
+        if (!playlist.isEmpty()){
+            currentSongIndex = (currentSongIndex - 1) % playlist.size();
+            loadCurrentSong();
+        }
+    }
 
     private void playSong(){
         if(clip != null){
@@ -224,6 +270,10 @@ public class Main extends Application {
 
             timeLabel.setText(formatTime(current) + " / " + formatTime(total));
 
+            if(current>=total){
+                stopSong();
+            }
+
         }
     }
 
@@ -247,6 +297,7 @@ public class Main extends Application {
             timeline.stop();
         }
         if (clip != null) {
+            clip.stop();
             clip.close();
         }
         if (audioStream != null){
