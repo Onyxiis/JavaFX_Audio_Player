@@ -66,3 +66,6 @@ Java 17+
 JavaFX 17+
 
 Maven (Dependency Management)
+
+📝 License
+This project is open source and available for personal use and modification.
