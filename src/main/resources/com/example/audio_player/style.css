@@ -1,0 +1,15 @@
+.slider .track {
+    -fx-background-color: rgba(255,255,255,0.1);
+    -fx-background-radius: 10;
+}
+
+.slider .thumb {
+    -fx-background-color: linear-gradient(to bottom, #667eea, #764ba2);
+    -fx-background-radius: 10;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: linear-gradient(to right, #667eea, #764ba2);
+    -fx-background-radius: 10;
+    -fx-background-insets: 0;
+}
