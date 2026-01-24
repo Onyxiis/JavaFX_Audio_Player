@@ -4,53 +4,53 @@ import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Slider;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.animation.Timeline;
-import javafx.animation.KeyFrame;
-import javafx.util.Duration;
-
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
-import java.sql.Time;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 public class Main extends Application {
 
-    private Clip clip;
-    private AudioInputStream audioStream;
-    private FloatControl volumeControl;
+    private AudioPlayerController controller;
 
-    private List<File> playlist = new ArrayList<>();
-    private int currentSongIndex = 0;
+
+
     private Label songLabel;
     private Label timeLabel;
     private Button playButton, pauseButton, stopButton, resetButton;
     private Button prevButton, nextButton;
     private Slider volumeSlider;
     private ProgressBar progressBar;
-    private Timeline timeline;
+
 
 
     @Override
     public void start(Stage primaryStage){
 
+        controller = new AudioPlayerController(this);
+
+        VBox mainLayout = new VBox(20,
+                createTopSection(),
+                createProgressBar(),
+                createControlButtons(primaryStage),
+                createVolumeSection(),
+                createLoadButton(primaryStage)
+        );
+
+        mainLayout.setAlignment(Pos.CENTER);
+        mainLayout.setPadding(new Insets(30));
+        mainLayout.setStyle("-fx-background-color: #ecf0f1");
+
+        Scene scene = new Scene(mainLayout, 600, 450);
+        primaryStage.setTitle("Audio Player");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        primaryStage.setOnCloseRequest(e -> controller.cleanup());
+    }
+
+    private VBox createTopSection() {
         songLabel = new Label("No song loaded");
         songLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
@@ -61,230 +61,98 @@ public class Main extends Application {
         topSection.setAlignment(Pos.CENTER);
         topSection.setPadding(new Insets(20));
 
+        return topSection;
+    }
 
+    private ProgressBar createProgressBar() {
         progressBar = new ProgressBar(0);
         progressBar.setPrefWidth(400);
+        return progressBar;
+    }
 
-        prevButton = new Button("⏮ Prev");
-        playButton = new Button("▶ Play");
-        pauseButton = new Button("⏸ Pause");
-        stopButton = new Button("⏹ Stop");
-        resetButton = new Button("🔄 Reset");
-        nextButton = new Button("⏭ Next");
-        Button loadButton = new Button("📁 Load Song");
+    private HBox createControlButtons(Stage stage) {
+        prevButton = createStyledButton("⏮ Prev");
+        playButton = createStyledButton("▶ Play");
+        pauseButton = createStyledButton("⏸ Pause");
+        stopButton = createStyledButton("⏹ Stop");
+        resetButton = createStyledButton("🔄 Reset");
+        nextButton = createStyledButton("⏭ Next");
 
-        playButton.setStyle("-fx-font-size: 14px; -fx-padding: 10 20");
-        pauseButton.setStyle("-fx-font-size: 14px; -fx-padding: 10 20");
-        stopButton.setStyle("-fx-font-size: 14px; -fx-padding: 10 20");
-        resetButton.setStyle("-fx-font-size: 14px; -fx-padding: 10 20");
-        loadButton.setStyle("-fx-font-size: 14px; -fx-padding: 10 20");
+        setButtonsEnabled(false);
 
-        playButton.setDisable(true);
-        pauseButton.setDisable(true);
-        stopButton.setDisable(true);
-        resetButton.setDisable(true);
-        prevButton.setDisable(true);
-        nextButton.setDisable(true);
+        prevButton.setOnAction(e -> controller.previousSong());
+        playButton.setOnAction(e -> controller.play());
+        pauseButton.setOnAction(e -> controller.pause());
+        stopButton.setOnAction(e -> controller.stop());
+        resetButton.setOnAction(e -> controller.reset());
+        nextButton.setOnAction(e -> controller.nextSong());
 
-        playButton.setOnAction(e -> playSong());
-        pauseButton.setOnAction(e -> pauseSong());
-        stopButton.setOnAction(e -> stopSong());
-        resetButton.setOnAction(e -> resetSong());
-        loadButton.setOnAction(e -> loadSong(primaryStage));
-        prevButton.setOnAction(e -> previousSong());
-        nextButton.setOnAction(e -> nextSong());
-
-        HBox controlButtons = new HBox(10, playButton, pauseButton, stopButton, resetButton,prevButton,nextButton);
+        HBox controlButtons = new HBox(10, prevButton, playButton, pauseButton,
+                stopButton, resetButton, nextButton);
         controlButtons.setAlignment(Pos.CENTER);
 
+        return controlButtons;
+    }
+
+    private VBox createVolumeSection() {
         Label volumeLabel = new Label("🔊 Volume");
+
         volumeSlider = new Slider(0, 100, 50);
         volumeSlider.setShowTickLabels(true);
         volumeSlider.setShowTickMarks(true);
         volumeSlider.setMajorTickUnit(25);
         volumeSlider.setPrefWidth(300);
 
-        volumeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            setVolume(newVal.intValue());
-        });
+        volumeSlider.valueProperty().addListener((obs,
+                                                  oldVal,
+                                                  newVal) ->
+                controller.setVolume(newVal.intValue())
+        );
 
         VBox volumeSection = new VBox(5, volumeLabel, volumeSlider);
         volumeSection.setAlignment(Pos.CENTER);
 
-        VBox mainLayout = new VBox(20,
-                topSection,
-                progressBar,
-                controlButtons,
-                volumeSection,
-                loadButton
-        );
-        mainLayout.setAlignment(Pos.CENTER);
-        mainLayout.setPadding(new Insets(30));
-        mainLayout.setStyle("-fx-background-color: #ecf0f1");
-
-        Scene scene = new Scene (mainLayout, 600, 450);
-        primaryStage.setTitle("Audio Player");
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
-        primaryStage.setOnCloseRequest(e -> cleanup());
-
-        timeline = new Timeline(new KeyFrame(Duration.millis(100), e -> updateProgress()));
-        timeline.setCycleCount(Timeline.INDEFINITE);
+        return volumeSection;
     }
 
-    private void loadSong(Stage stage) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select Audio File");
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Audio Files", "*.wav", "*.au", "*.aiff")
-        );
-        File musicFolder = new File("src/main/resources/music");
-        if (!musicFolder.exists()) {
-            musicFolder = new File("music");
-        }
-        if (musicFolder.exists() && musicFolder.isDirectory()) {
-            fileChooser.setInitialDirectory(musicFolder);
-        }
-
-        File selectedFile = fileChooser.showOpenDialog(stage);
-
-        if (selectedFile != null) {
-            playlist.clear();
-
-            File directory = selectedFile.getParentFile();
-            File[] files = directory.listFiles((dir, name) ->
-                    name.toLowerCase().endsWith(".wav") ||
-                            name.toLowerCase().endsWith(".au") ||
-                            name.toLowerCase().endsWith(".aiff")
-            );
-            if (files != null) {
-                playlist.addAll(Arrays.asList(files));
-            }
-            currentSongIndex = playlist.indexOf(selectedFile);
-            loadCurrentSong();
-        }
+    private Button createLoadButton(Stage stage) {
+        Button loadButton = createStyledButton("📁 Load Song");
+        loadButton.setOnAction(e -> controller.loadSongDialog(stage));
+        return loadButton;
     }
 
-            private void loadCurrentSong() {
-                if ( playlist.isEmpty() || currentSongIndex < 0 || currentSongIndex >= playlist.size()) return;
-
-                File file = playlist.get(currentSongIndex);
-
-                try {
-                    cleanup();
-
-                    audioStream = AudioSystem.getAudioInputStream(file);
-                    clip = AudioSystem.getClip();
-                    clip.open(audioStream);
-
-                    volumeControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-
-                    songLabel.setText(file.getName());
-                    timeLabel.setText("0:00 / " + formatTime(clip.getMicrosecondLength()));
-
-
-                    playButton.setDisable(false);
-                    pauseButton.setDisable(false);
-                    stopButton.setDisable(false);
-                    resetButton.setDisable(false);
-                    prevButton.setDisable(false);
-                    nextButton.setDisable(false);
-
-                    setVolume((int) volumeSlider.getValue());
-
-                    playSong();
-
-                    showAlert("Success", "Song loaded successfully!", Alert.AlertType.INFORMATION);
-
-                } catch (UnsupportedAudioFileException e) {
-                    showAlert("Error", "Unsupported audio file format", Alert.AlertType.ERROR);
-                } catch (IOException e) {
-                    showAlert("Error", "Could not read file", Alert.AlertType.ERROR);
-                } catch (LineUnavailableException e) {
-                    showAlert("Error", "Audio line unavaible", Alert.AlertType.ERROR);
-                }
-            }
-
-
-
-    private void nextSong(){
-        if(!playlist.isEmpty()){
-            currentSongIndex = (currentSongIndex + 1) % playlist.size();
-            loadCurrentSong();
-        }
-    }
-    private void previousSong(){
-        if (!playlist.isEmpty()){
-            currentSongIndex = (currentSongIndex - 1) % playlist.size();
-            loadCurrentSong();
-        }
+    private Button createStyledButton(String text) {
+        Button button = new Button(text);
+        button.setStyle("-fx-font-size: 14px; -fx-padding: 10 20");
+        return button;
     }
 
-    private void playSong(){
-        if(clip != null){
-            clip.start();
-            timeline.play();
-        }
+    public void updateSongLabel(String songName) {
+        songLabel.setText(songName);
     }
 
-    private void pauseSong(){
-        if(clip != null && clip.isRunning()){
-            clip.stop();
-            timeline.pause();
-        }
+    public void updateTimeLabel(String time) {
+        timeLabel.setText(time);
     }
 
-    private void stopSong(){
-        if(clip != null) {
-            clip.stop();
-            clip.setMicrosecondPosition(0);
-            timeline.pause();
-            updateProgress();
-        }
-    }
-    private void resetSong(){
-        if(clip != null){
-            clip.setMicrosecondPosition(0);
-            updateProgress();
-        }
+    public void updateProgress(double progress) {
+        progressBar.setProgress(progress);
     }
 
-    private void setVolume(int percent){
-        if(volumeControl != null){
-            float min = volumeControl.getMinimum();
-            float max = volumeControl.getMaximum();
-            float range = max - min;
-            float gain = min + (range * percent / 100.0f);
-            volumeControl.setValue(gain);
-        }
+    public void setButtonsEnabled(boolean enabled) {
+        playButton.setDisable(!enabled);
+        pauseButton.setDisable(!enabled);
+        stopButton.setDisable(!enabled);
+        resetButton.setDisable(!enabled);
+        prevButton.setDisable(!enabled);
+        nextButton.setDisable(!enabled);
     }
 
-    private void updateProgress(){
-        if(clip != null){
-            long current = clip.getMicrosecondPosition();
-            long total = clip.getMicrosecondLength();
-
-            double progress = (double) current / total;
-            progressBar.setProgress(progress);
-
-            timeLabel.setText(formatTime(current) + " / " + formatTime(total));
-
-            if(current>=total){
-                stopSong();
-            }
-
-        }
+    public int getCurrentVolume() {
+        return (int) volumeSlider.getValue();
     }
 
-    private String formatTime(long microseconds){
-        long seconds = microseconds / 1_000_000;
-        long minutes = seconds / 60;
-        seconds = seconds % 60;
-        return String.format("%d:%02d", minutes, seconds);
-    }
-
-    private void showAlert(String title, String message, Alert.AlertType type){
+    public void showAlert(String title, String message, Alert.AlertType type) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
         alert.setHeaderText(null);
@@ -292,24 +160,8 @@ public class Main extends Application {
         alert.showAndWait();
     }
 
-    private void cleanup(){
-        if (timeline != null) {
-            timeline.stop();
-        }
-        if (clip != null) {
-            clip.stop();
-            clip.close();
-        }
-        if (audioStream != null){
-            try{
-                audioStream.close();
-            }catch (IOException e){
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public static void main(String[] args){
+    public static void main(String[] args) {
         launch(args);
     }
+
 }
